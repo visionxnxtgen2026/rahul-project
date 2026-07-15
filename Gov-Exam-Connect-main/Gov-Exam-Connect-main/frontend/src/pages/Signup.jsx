@@ -3,46 +3,77 @@ import { useNavigate, Link } from "react-router-dom";
 import API from "../api";
 
 const Signup = () => {
+  const navigate = useNavigate();
+
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const navigate = useNavigate();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
     setError("");
 
     if (password !== confirmPassword) {
-      return setError("Passwords do not match");
+      setError("Passwords do not match.");
+      return;
     }
 
     try {
+      setLoading(true);
+
+      console.log("📤 Sending Register Request...");
+
       const response = await API.post("/auth/register", {
         name,
         email,
-        password
+        password,
       });
+
+      console.log("✅ Register Success:", response.data);
+
       localStorage.setItem("token", response.data.token);
       localStorage.setItem("user", JSON.stringify(response.data));
+
       navigate("/");
     } catch (err) {
-      setError(
-        err.response && err.response.data.message
-          ? err.response.data.message
-          : "Registration failed. Try again."
-      );
+      console.error("❌ Register Error:", err);
+
+      if (err.response) {
+        console.log("Status:", err.response.status);
+        console.log("Response:", err.response.data);
+
+        setError(
+          err.response.data.message ||
+          JSON.stringify(err.response.data)
+        );
+      } else if (err.request) {
+        setError("Cannot connect to backend server.");
+      } else {
+        setError(err.message);
+      }
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-card">
       <h2 className="auth-title">Create Account</h2>
-      {error && <div className="alert-message alert-error">{error}</div>}
+
+      {error && (
+        <div className="alert-message alert-error">
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit}>
         <div className="form-group">
           <label>Full Name</label>
+
           <input
             type="text"
             className="form-control"
@@ -52,8 +83,10 @@ const Signup = () => {
             required
           />
         </div>
+
         <div className="form-group">
           <label>Email Address</label>
+
           <input
             type="email"
             className="form-control"
@@ -63,8 +96,10 @@ const Signup = () => {
             required
           />
         </div>
+
         <div className="form-group">
           <label>Password</label>
+
           <input
             type="password"
             className="form-control"
@@ -74,8 +109,10 @@ const Signup = () => {
             required
           />
         </div>
+
         <div className="form-group">
           <label>Confirm Password</label>
+
           <input
             type="password"
             className="form-control"
@@ -85,12 +122,19 @@ const Signup = () => {
             required
           />
         </div>
-        <button type="submit" className="btn-submit">
-          Sign Up
+
+        <button
+          type="submit"
+          className="btn-submit"
+          disabled={loading}
+        >
+          {loading ? "Creating Account..." : "Sign Up"}
         </button>
       </form>
+
       <div className="auth-switch">
-        Already have an account? <Link to="/login">Login here</Link>
+        Already have an account?{" "}
+        <Link to="/login">Login here</Link>
       </div>
     </div>
   );
