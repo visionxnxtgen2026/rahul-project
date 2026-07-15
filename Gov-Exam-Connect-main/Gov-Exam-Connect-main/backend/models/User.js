@@ -4,26 +4,36 @@ const userSchema = new mongoose.Schema(
   {
     name: {
       type: String,
-      required: true,
-      trim: true
+      required: [true, "Name is required"],
+      trim: true,
+      minlength: 2,
+      maxlength: 100,
     },
+
     email: {
       type: String,
-      required: true,
+      required: [true, "Email is required"],
       unique: true,
+      lowercase: true,
       trim: true,
-      lowercase: true
+      match: [
+        /^\S+@\S+\.\S+$/,
+        "Please enter a valid email address",
+      ],
     },
+
     password: {
       type: String,
-      required: true
-    }
+      required: [true, "Password is required"],
+      minlength: 6,
+    },
   },
   {
-    timestamps: true
+    timestamps: true,
+    versionKey: false,
   }
 );
 
-const User = mongoose.model("User", userSchema);
-
-module.exports = User;
+// Prevent OverwriteModelError in development/serverless
+module.exports =
+  mongoose.models.User || mongoose.model("User", userSchema);
